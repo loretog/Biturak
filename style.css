@@ -1,0 +1,99 @@
+:root {
+  --bg: #0c0f13;
+  --fg: #e6edf3;
+  --accent: #38bdf8;
+  --danger: #ef4444;
+  --ok: #10b981;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(1200px 800px at 50% 20%, #111827, var(--bg));
+  color: var(--fg);
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game {
+  border: 1px solid #1f2937;
+  background: linear-gradient(180deg, rgba(12,15,19,0.8), rgba(12,15,19,1));
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+#gameTitle {
+  margin: 0 0 8px 0;
+  color: var(--fg);
+  opacity: 0.1;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  position: absolute;
+}
+
+#ui {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+#powerups {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: var(--fg);
+  font-size: 12px;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#overlay.hidden { display: none; }
+
+.panel {
+  width: 90%;
+  max-width: 520px;
+  padding: 24px;
+  background: #0b1220;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+
+.panel h1 { margin-top: 0; }
+
+button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: linear-gradient(180deg, #1f2937, #0f172a);
+  color: var(--fg);
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.1); }

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biturak: Huling Depensa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="ui">
+        <div class="ui-left">
+            <div id="score">Score: 0</div>
+            <div id="wave">Wave 1</div>
+            <div id="perks" style="opacity:.9;font-size:12px;">Upgrades: None</div>
+        </div>
+        <div class="ui-right">
+            <div id="health">❤❤❤</div>
+        </div>
+    </div>
+
+    <h1 id="gameTitle">Biturak: Huling Depensa</h1>
+    <canvas id="game" width="480" height="720"></canvas>
+
+    <div id="powerups"></div>
+
+    <div id="overlay">
+        <div class="panel">
+            <h1>Negative Blocks Shooter</h1>
+            <p>Move: A/D or Arrow Keys. Auto-fire enabled.</p>
+            <p>Collide with negative blocks to gain temporary power based on magnitude.</p>
+            <button id="startBtn">Start</button>
+        </div>
+    </div>
+
+    <script src="src/main.js"></script>
+</body>
+</html>
