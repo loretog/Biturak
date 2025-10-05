@@ -93,6 +93,7 @@ const Sound = {
 // Game state
 const state = {
   running: false,
+  paused: false,
   width: canvas.width,
   height: canvas.height,
   score: 0,
@@ -112,6 +113,12 @@ const state = {
   effects: [],
   timers: [],
   kills: { grunt: 0, battleship: 0, lasership: 0, boss: 0 },
+};
+
+// Control button states and positions
+const controls = {
+  pauseBtn: { x: state.width - 80, y: state.height - 50, w: 70, h: 20, text: '⏸️ Pause' },
+  soundBtn: { x: state.width - 80, y: state.height - 26, w: 70, h: 20, text: '🔊 Sound' }
 };
 
 function addTimer(duration, onDone) {
@@ -138,7 +145,7 @@ class Player {
 }
 
 class Bullet { constructor(x, y, vx, vy, dmg, pierce = 0) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.pierce = pierce; this.r = 2.5; this.dead = false; } }
-class Enemy { constructor(x, y, hp, vx, vy, type = 'grunt') { this.x = x; this.y = y; this.hp = hp; this.vx = vx; this.vy = vy; this.type = type; this.w = 24; this.h = 18; this.fireCd = randRange(1.2, 2.2); this.dead = false; this.collides = (type !== 'battleship'); this.anchorY = null; } rect(){ return { x:this.x, y:this.y, w:this.w, h:this.h }; } }
+class Enemy { constructor(x, y, hp, vx, vy, type = 'grunt') { this.x = x; this.y = y; this.hp = hp; this.vx = vx; this.vy = vy; this.type = type; this.w = 24; this.h = 18; this.fireCd = randRange(1.2, 2.2); this.dead = false; this.collides = (type !== 'battleship'); this.anchorY = null; this.shotsFired = 0; this.maxShots = (type === 'grunt') ? 2 : Infinity; } rect(){ return { x:this.x, y:this.y, w:this.w, h:this.h }; } }
 class Block { constructor(x, y, value) { this.x=x; this.y=y; this.value=value; this.vy=randRange(40, 70); this.dead=false; const mag = Math.abs(value); const size = clamp(18 + mag * 1.2, 20, 60); this.w=size; this.h=size; } rect(){ return {x:this.x, y:this.y, w:this.w, h:this.h}; } }
 class Pickup { constructor(x,y,kind,dur=6){ this.x=x; this.y=y; this.r=6; this.kind=kind; this.dur=dur; this.vy=60; this.dead=false; } }
 
@@ -148,6 +155,7 @@ function resetGame() {
   state.waveDuration = 45;
   state.waveTime = state.waveDuration;
   state.spawnCd = 0;
+  state.paused = false;
   state.bullets.length = 0;
   state.enemies.length = 0;
   state.enemyBullets.length = 0;
@@ -163,6 +171,7 @@ function resetGame() {
   ui.wave.textContent = `Wave ${state.wave} - ${Math.ceil(state.waveTime)}s`;
   ui.health.textContent = '❤❤❤';
   ui.perks.textContent = 'Upgrades: None';
+  controls.pauseBtn.text = '⏸️ Pause';
 }
 
 // Spawning
@@ -181,7 +190,7 @@ function spawnWaveBurst(wave) {
     for (let i=0;i<lanes;i++) {
     const x = 40 + i * ((state.width - 80)/ Math.max(1,(lanes-1)));
     if (chance(enemyChance)) {
-      const hp = Math.max(2, Math.ceil(4 + wave * 0.8));
+      const hp = Math.max(1, Math.ceil(2 + wave * 0.4));
       state.enemies.push(new Enemy(x, -randRange(30, 140), hp, 0, randRange(40, 90)));
     }
     if (chance(blockChance)) state.blocks.push(new Block(x, -randRange(120, 260), pickBlockValue(wave)));
@@ -203,7 +212,7 @@ function spawnFormationV(cx, yTop, count, spacing, wave){
     const totalWidth = (inRow - 1) * spacing;
     for (let i=0;i<inRow;i++){
       const x = cx - totalWidth/2 + i * spacing + (row%2===0? spacing*0.15:0);
-      const hp = Math.max(2, Math.ceil(4 + wave * 0.8));
+      const hp = Math.max(1, Math.ceil(2 + wave * 0.4));
       const e = new Enemy(x, y, hp, 0, randRange(55, 95), 'grunt');
       // slight lateral drift to sell formation motion
       e.vx = (i - (inRow-1)/2) * 6;
@@ -517,8 +526,9 @@ function update(dt){
     const fireIntervalBase = (e.type === 'boss') ? 1.0 : (e.type === 'battleship' ? randRange(0.7, 1.2) : randRange(1.6, 2.4));
     const fireAccel = Math.max(0.5, 1.0 - (state.wave-1) * 0.06); // faster with waves
     const fireInterval = fireIntervalBase * fireAccel;
-    if (e.fireCd <= 0 && e.y > 10){
+    if (e.fireCd <= 0 && e.y > 10 && e.shotsFired < e.maxShots){
       e.fireCd += fireInterval;
+      e.shotsFired++;
       // planes only shoot forward (downward), not behind
       const speed = (e.type==='boss') ? 120 : 90;
       if (e.type === 'grunt'){
@@ -715,6 +725,34 @@ function render(){
     const hearts = '❤'.repeat(Math.max(0, state.player.health));
     ctx.textAlign = 'right';
     ctx.fillText(hearts, state.width - 8, 8);
+  }
+
+  // Control buttons (pause/sound)
+  if (state.running) {
+    ctx.save();
+    // Pause button
+    const pauseBtn = controls.pauseBtn;
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+    ctx.fillRect(pauseBtn.x, pauseBtn.y, pauseBtn.w, pauseBtn.h);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pauseBtn.x, pauseBtn.y, pauseBtn.w, pauseBtn.h);
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(pauseBtn.text, pauseBtn.x + pauseBtn.w/2, pauseBtn.y + pauseBtn.h/2);
+    
+    // Sound button
+    const soundBtn = controls.soundBtn;
+    const soundAlpha = Sound.enabled ? 0.9 : 0.5;
+    ctx.fillStyle = `rgba(30, 41, 59, ${soundAlpha})`;
+    ctx.fillRect(soundBtn.x, soundBtn.y, soundBtn.w, soundBtn.h);
+    ctx.strokeStyle = '#475569';
+    ctx.strokeRect(soundBtn.x, soundBtn.y, soundBtn.w, soundBtn.h);
+    ctx.fillStyle = Sound.enabled ? '#e6edf3' : '#94a3b8';
+    ctx.fillText(soundBtn.text, soundBtn.x + soundBtn.w/2, soundBtn.y + soundBtn.h/2);
+    ctx.restore();
   }
 
   // player
@@ -967,7 +1005,19 @@ function render(){
 
 function gameLoop(ts){
   if (!state.running){ lastTime = ts; requestAnimationFrame(gameLoop); return; }
-  const delta = (ts - lastTime) / 1000; lastTime = ts; accumulator += Math.min(delta, 0.1);
+  
+  const delta = (ts - lastTime) / 1000; lastTime = ts;
+  
+  // If paused, only render but don't update
+  if (state.paused) {
+    render();
+    renderBuffBadges();
+    renderPerkLine();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+  
+  accumulator += Math.min(delta, 0.1);
   while (accumulator >= fixedDt){ update(fixedDt); accumulator -= fixedDt; }
   render();
   renderBuffBadges();
@@ -1020,3 +1070,51 @@ function spawnEnemyExplosion(x, y, count = 22){
     state.effects.push({ kind:'particle', x, y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, r: 2 + Math.random()*3, t: 0.5 + Math.random()*0.4, tMax: 0.8 });
   }
 }
+
+// Canvas mouse click detection for control buttons
+canvas.addEventListener('click', (e) => {
+  if (!state.running) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  
+  // Check pause button click
+  const pauseBtn = controls.pauseBtn;
+  if (x >= pauseBtn.x && x <= pauseBtn.x + pauseBtn.w && 
+      y >= pauseBtn.y && y <= pauseBtn.y + pauseBtn.h) {
+    state.paused = !state.paused;
+    if (state.paused) {
+      controls.pauseBtn.text = '▶️ Resume';
+    } else {
+      controls.pauseBtn.text = '⏸️ Pause';
+    }
+    return;
+  }
+  
+  // Check sound button click
+  const soundBtn = controls.soundBtn;
+  if (x >= soundBtn.x && x <= soundBtn.x + soundBtn.w && 
+      y >= soundBtn.y && y <= soundBtn.y + soundBtn.h) {
+    Sound.enabled = !Sound.enabled;
+    if (Sound.enabled) {
+      controls.soundBtn.text = '🔊 Sound';
+    } else {
+      controls.soundBtn.text = '🔇 Sound';
+    }
+    return;
+  }
+});
+
+// Space bar to pause/resume
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && state.running) {
+    e.preventDefault();
+    state.paused = !state.paused;
+    if (state.paused) {
+      controls.pauseBtn.text = '▶️ Resume';
+    } else {
+      controls.pauseBtn.text = '⏸️ Pause';
+    }
+  }
+});
